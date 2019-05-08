@@ -23,8 +23,8 @@ def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
     '''
     ############################ prepare anchors #########################
     # step1, origin anchors
-    anchors = generate_anchors() # shape=(num_anchors, 4)
-    _num_anchors = anchors.shape[0] # 10 anchors
+    base_anchors = generate_anchors() # shape=(10, 4)
+    num_base_anchors = base_anchors.shape[0] # 10 anchors
 
     # step2, stride anchors on image
     feat_map_h, feat_map_w = feat_map_size
@@ -34,40 +34,40 @@ def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
     shifts = np.vstack((shift_x.ravel(), shift_y.ravel(),
                         shift_x.ravel(), shift_y.ravel())).transpose() # shape=(num_strides, 4)
 
-    anchors = anchors[None, :, :] # new axis, shape=(1, num_anchors, 4)
+    base_anchors = base_anchors[None, :, :] # new axis, shape=(1, num_base_anchors, 4)
     shifts = shifts[None, :, :] # new axis, shape=(1, num_strides, 4)
     shifts = shifts.transpose((1, 0, 2)) # shape=(num_strides, 1, 4)
 
-    all_anchors = anchors + shifts # shape=(num_strides, num_anchors, 4)
-    all_anchors = all_anchors.reshape((-1, 4))
+    all_anchors = base_anchors + shifts # shape=(num_strides, num_anchors, 4)
+    all_anchors = all_anchors.reshape((-1, 4)) # shape=(num_all_anchors, 4)
     num_all_anchors = all_anchors.shape[0]
 
     # step3, rm outside anchors
     im_h, im_w, _ = im_info
     border = 0
-    inside_indices = np.where((anchors[:, 0] >= -border) & # bool list
-                              (anchors[:, 1] >= -border) &
-                              (anchors[:, 2] < im_w + border) &
-                              (anchors[:, 3] < im_h + border))[0]
+    inside_indices = np.where((all_anchors[:, 0] >= -border) & # bool list
+                              (all_anchors[:, 1] >= -border) &
+                              (all_anchors[:, 2] < im_w + border) &
+                              (all_anchors[:, 3] < im_h + border))[0]
 
-    anchors = all_anchors[inside_indices, :]
-    num_anchors = len(inside_indices)
+    inside_anchors = all_anchors[inside_indices, :]
+    num_inside_anchors = len(inside_indices)
 
     ############################ anchor label ###########################
     # positive 1
     # negative 0
     # ignore -1
-    labels = np.empty((len(inside_indices), ), dtype=np.float32)
+    labels = np.empty((num_inside_anchors, ), dtype=np.float)
     labels.fill(-1)
 
     iou_mat = py_iou(
-        np.ascontiguousarray(anchors, dtype=np.float),
+        np.ascontiguousarray(inside_anchors, dtype=np.float),
         np.ascontiguousarray(gt_boxes, dtype=np.float)
-    ) # shape=(num_anchors, num_gts)
+    ) # shape=(num_inside_anchors, num_gts)
 
     # max gt for anchors
     maxgt_indices = iou_mat.argmax(axis=1)
-    maxgt_iou = iou_mat[np.arange(num_anchors), maxgt_indices] # shape=(num_anchors, )
+    maxgt_iou = iou_mat[np.arange(num_inside_anchors), maxgt_indices] # shape=(num_anchors, )
 
     labels[maxgt_iou < cfg.RPN_NEGATIVE_OVERLAP] = 0
     labels[maxgt_iou >= cfg.RPN_POSITIVE_OVERLAP] = 1
@@ -77,11 +77,12 @@ def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
     labels[maxanchor_indices] = 1
 
     # positive num <= const
-    max_potitive_num = cfg.RPN_BATCHSIZE * cfg.RPN_FG_FRACTION
-    positive_num = len(np.where(labels == 1)[0])
+    max_potitive_num = int(cfg.RPN_BATCHSIZE * cfg.RPN_FG_FRACTION)
+    positive_indices = np.where(labels == 1)[0]
+    positive_num = len(positive_indices)
     if positive_num > max_potitive_num:
-        drop_indices = np.random.choice(np.where(label == 1)[0],
-                                        max_potitive_num - positive_num,
+        drop_indices = np.random.choice(positive_indices,
+                                        positive_num - max_potitive_num,
                                         replace=False)
         labels[drop_indices] = -1
 
@@ -96,14 +97,14 @@ def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
         labels[drop_indices] = -1
 
     ############################# rpn bbox ############################
-    reg_targets = np.empty((len(inside_indices), 4), dtype=np.float32)
-    reg_targets = bbox_transform(anchors, gt_boxes[maxgt_indices, :]) # shape=(num_anchors, 4)
+    reg_targets = np.empty((num_inside_anchors, 2), dtype=np.float32)
+    reg_targets = bbox_transform(inside_anchors, gt_boxes[maxgt_indices, :]) # shape=(num_inside_anchors, 2)
 
-    labels = _unmap(labels, all_anchors.shape[0], inside_indices, -1) # shape=(1, num_all_anchors)
-    reg_targets = _unmap(reg_targets, all_anchors.shape[0], inside_indices, 0) # shape=(num_all_anchors, 4)
+    labels = _unmap(labels, num_all_anchors, inside_indices, -1) # shape=(num_all_anchors, )
+    reg_targets = _unmap(reg_targets, num_all_anchors, inside_indices, 0) # shape=(num_all_anchors, 2)
 
-    labels = labels.reshape((1, feat_map_h, feat_map_w, _num_anchors)).transpose((0, 3, 1, 2))
-    reg_targets = reg_targets.reshape((1, feat_map_h, feat_map_w, _num_anchors*2)).transpose((0, 3, 1, 2))
+    labels = labels.reshape((1, feat_map_h, feat_map_w, num_base_anchors)).transpose((0, 3, 1, 2))
+    reg_targets = reg_targets.reshape((1, feat_map_h, feat_map_w, num_base_anchors*2)).transpose((0, 3, 1, 2))
 
     return labels, reg_targets
 

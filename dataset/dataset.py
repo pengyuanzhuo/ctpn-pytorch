@@ -71,7 +71,9 @@ class SplitBoxDataset(data.Dataset):
         if img is None or gt_bboxes.shape[0] == 0:
             return self.__getitem__(random.randint(0, self.n - 1))
 
-        sample = (img, gt_bboxes)
+        h, w, _ = img.shape
+        img_info = (h, w, 1)
+        sample = (img, gt_bboxes, img_info)
         if self.transform is not None:
             sample = self.transform(sample)
 
@@ -83,7 +85,7 @@ class Rescale(object):
         self.short_side = short_side
 
     def __call__(self, sample):
-        img, gt_bboxes = sample
+        img, gt_bboxes, img_info = sample
         h, w, _ = img.shape
         scale = float(self.short_side) / float(min(h, w))
         img = cv2.resize(img, (0, 0), fx=scale, fy=scale)
@@ -91,17 +93,19 @@ class Rescale(object):
         w_scale = float(img.shape[1]) / w
         gt_bboxes[:, (0, 2)] = gt_bboxes[:, (0, 2)] * w_scale
         gt_bboxes[:, (1, 3)] = gt_bboxes[:, (1, 3)] * h_scale
+        h_new, w_new, _ = img.shape
+        img_info = (h_new, w_new, scale)
 
-        return (img, gt_bboxes)
+        return (img, gt_bboxes, img_info)
 
 
 class ToTensor(object):
     def __call__(self, sample):
-        img, gt_bboxes = sample
+        img, gt_bboxes, img_info = sample
         img = np.ascontiguousarray(img[:, :, ::-1])
         img = img.transpose((2, 0, 1)).astype(np.float32)
         img = img / 255.0
-        return (torch.from_numpy(img).float(), torch.from_numpy(gt_bboxes))
+        return (torch.from_numpy(img).float(), torch.from_numpy(gt_bboxes), img_info)
 
 
 class Normalize(object):
@@ -111,7 +115,7 @@ class Normalize(object):
         self.inplace = inplace
 
     def __call__(self, sample):
-        img, gt_bboxes = sample
+        img, gt_bboxes, img_info = sample
         if not (torch.is_tensor(img) and img.ndimension()) == 3:
             raise TypeError('img is not a torch image.')
 
@@ -120,7 +124,7 @@ class Normalize(object):
         img -= mean[:, None, None]
         img /= std[:, None, None]
 
-        return (img, gt_bboxes)
+        return (img, gt_bboxes, img_info)
 
 
 if __name__ == "__main__":

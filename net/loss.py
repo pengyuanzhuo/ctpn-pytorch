@@ -32,8 +32,8 @@ class CtpnLoss(nn.Module):
         score_target = score_target.reshape((-1))
 
         valid_indices = (score_target >= 0).nonzero()[:, 0] # positive & negative label indices
-        score = score[valid_indices, :]
-        score_target = score_target[valid_indices]
+        # score = score[valid_indices, :]
+        # score_target = score_target[valid_indices]
 
         cls_loss = self.CrossEntropyLoss(score, score_target)
 
@@ -43,13 +43,13 @@ class CtpnLoss(nn.Module):
         # paper: valid sample(positive or iou > 0.5 anchors)
         # code: valid sample(positive anchors)
         loc = loc.reshape((loc.shape[0], 2, -1, loc.shape[-1])) # (N, 2, 10H, W)
-        loc = loc.permute((0, 2, 3, 1)) # (N, 2, 10H, W)
-        loc = loc.reshape((-1, 2))
+        loc = loc.permute((0, 2, 3, 1)) # (N, 2, 10H, W) => (N, 10H, W, 2)
+        loc = loc.reshape((-1, 2)) # (N*10H*W, 2)
         loc = loc[valid_indices, :]
 
         # loc_target = loc_target[:, (1, 3), :, :] # shape=(1, 20, H, W)
-        loc_target = loc_target.reshape((loc_target.shape[0], 2, -1, loc_target.shape[-1]))
-        loc_target = loc_target.permute((0, 3, 1, 2))
+        loc_target = loc_target.reshape((loc_target.shape[0], 2, -1, loc_target.shape[-1])) # shape=(N, 2, 10H, W)
+        loc_target = loc_target.permute((0, 2, 3, 1)) # shape=(N, 10H, W, 2)
         loc_target = loc_target.reshape((-1, 2))
         loc_target = loc_target[valid_indices, :]
 

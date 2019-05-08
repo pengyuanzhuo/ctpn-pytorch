@@ -3,8 +3,8 @@
 import numpy as np
 from rpn.generate_anchors import generate_anchors
 from rpn.config import Config as cfg
-from bbox.bbox_transform import bbox_transform
-from bbox.bbox import bbox_overlaps
+from bbox.bbox_utils import bbox_transform
+from bbox.bbox_utils import py_iou
 
 
 def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
@@ -60,7 +60,7 @@ def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
     labels = np.empty((len(inside_indices), ), dtype=np.float32)
     labels.fill(-1)
 
-    iou_mat = bbox_overlaps(
+    iou_mat = py_iou(
         np.ascontiguousarray(anchors, dtype=np.float),
         np.ascontiguousarray(gt_boxes, dtype=np.float)
     ) # shape=(num_anchors, num_gts)

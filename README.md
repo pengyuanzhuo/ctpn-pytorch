@@ -7,8 +7,8 @@ Ref: [eragonruan/text-detection-ctpn](https://github.com/eragonruan/text-detecti
 - [x] net and loss
 - [x] numpy bbox utils
 - [x] BLSTM
-- [] text connector
-- [] cython bbox utils 
+- [ ] text connector
+- [ ] cython bbox utils 
 
 # 2 requirements
 pytorch >= 0.4.1

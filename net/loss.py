@@ -32,8 +32,8 @@ class CtpnLoss(nn.Module):
         score_target = score_target.reshape((-1))
 
         valid_indices = (score_target >= 0).nonzero()[:, 0] # positive & negative label indices
-        # score = score[valid_indices, :]
-        # score_target = score_target[valid_indices]
+        score = score[valid_indices, :]
+        score_target = score_target[valid_indices]
 
         cls_loss = self.CrossEntropyLoss(score, score_target)
 

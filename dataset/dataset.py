@@ -99,7 +99,8 @@ class ToTensor(object):
     def __call__(self, sample):
         img, gt_bboxes = sample
         img = np.ascontiguousarray(img[:, :, ::-1])
-        img = img.transpose((2, 0, 1))
+        img = img.transpose((2, 0, 1)).astype(np.float32)
+        img = img / 255.0
         return (torch.from_numpy(img).float(), torch.from_numpy(gt_bboxes))
 
 

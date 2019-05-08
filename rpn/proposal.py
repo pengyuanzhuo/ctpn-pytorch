@@ -58,24 +58,25 @@ def bbox_proposal(cls_map, reg_map, im_info, feat_stride=16):
 
     '''
     img_h, img_w, img_scale = im_info
+
     ##################### step1, generate anchors ##############
-    base_anchor = generate_anchors() # shape=(10, 4), vstack [xmin, ymin, xmax, ymax]
-    N, _, feat_h, feat_w = cls_map.shape[2:]
-    stride_x = np.arange(0, feat_w) * feat_stride
-    stride_y = np.arange(0, feat_h) * feat_stride
+    base_anchors = generate_anchors() # shape=(10, 4), vstack [xmin, ymin, xmax, ymax]
+    N, _, feat_map_h, feat_map_w = cls_map.shape
+    stride_x = np.arange(0, feat_map_w) * feat_stride
+    stride_y = np.arange(0, feat_map_h) * feat_stride
     stride_x, stride_y = np.meshgrid(stride_x, stride_y)
     shifts = np.vstack((stride_x.ravel(), stride_y.ravel(),
-                       stride_x.ravel(), stride_y.ravel())).transpose() # shape=(H*W, 4)
+                       stride_x.ravel(), stride_y.ravel())).transpose() # shape=(num_strides, 4)
 
     shifts = shifts[np.newaxis, :, :].transpose((1, 0, 2))
-    anchors = base_anchor + shifts
-    anchors = anchors.reshape((-1, 4)) # shape=(H*W, 4)
-    n_anchors = anchors.shape[0]
+    all_anchors = base_anchors + shifts
+    all_anchors = all_anchors.reshape((-1, 4)) # shape=(H*W, 4)
+    num_all_anchors = all_anchors.shape[0]
 
     # reg_map 4D => 2D
     # bbox_deltas: vstack [ty, th]
-    bbox_deltas = reg_map.transpose((0, 2, 3, 1)) # (N, 20, H, W) => (N, H, W, 20)
-    bbox_deltas = bbox_deltas.reshape((-1, 2)) # (N, H, W, 20) => (N*H*W*A, 2))
+    bbox_deltas = reg_map.reshape((N, 2, -1, feat_map_w)).transpose((0, 2, 3, 1)) # (N, 20, H, W) => (N, 10H, W, 2)
+    bbox_deltas = bbox_deltas.reshape((-1, 2)) # (N*H*W*10, 2))
 
     # cls_map 4D => 2D
     scores = cls_map.transpose((0, 2, 3, 1)) # (N, 2A, H, W) => (N, H, W, 2A)
@@ -86,9 +87,9 @@ def bbox_proposal(cls_map, reg_map, im_info, feat_stride=16):
     scores = scores.ravel() # (H*W*A, )
 
     # 调整超出图像边界的proposal, 并去除<min_size的proposal
-    proposal = bbox_transform_inv(anchors, bbox_deltas) # shape=(H*W, 4)
+    proposal = bbox_transform_inv(all_anchors, bbox_deltas) # shape=(H*W, 4)
     proposal = bbox_clip(proposal, img_h, img_w)
-    keep_indices = bbox_filter(proposal, cfg)
+    keep_indices = bbox_filter(proposal, cfg.MIN_SIZE)
     scores = scores[keep_indices]
     proposal = scores[keep_indices, :]
 
@@ -105,14 +106,10 @@ def bbox_proposal(cls_map, reg_map, im_info, feat_stride=16):
     proposal = proposal[scores_indices, :]
 
     # nms
-    scores, proposal = py_nms(scores, proposal, iou_threshold=cfg.NMS_THRESHOLD, max_boxes=RPN_POST_NMS_N)
+    scores, proposal = py_nms(scores, proposal, iou_threshold=cfg.NMS_THRESHOLD, max_boxes=cfg.RPN_POST_NMS_N)
 
     return scores, proposal
 
 
-
-
 if __name__ == "__main__":
     bbox_proposal((4, 4))
-
-

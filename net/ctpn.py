@@ -52,7 +52,7 @@ class CTPN(nn.Module):
 
         self.cls = nn.Conv2d(512, 2*10, kernel_size=1, stride=1)
         self.loc = nn.Conv2d(512, 2*10, kernel_size=1, stride=1)
-        self.side_refinement = nn.Conv2d(512, 10, kernel_size=1, stride=1)
+        # self.side_refinement = nn.Conv2d(512, 10, kernel_size=1, stride=1)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -63,11 +63,11 @@ class CTPN(nn.Module):
         x = self.fc(x)
         x = self.relu(x)
 
-        score = self.cls(x)
-        loc = self.loc(x)
-        side_refinement = self.side_refinement(x)
+        score = self.cls(x) # (N, 20, H, W)
+        loc = self.loc(x) # (N, 20, H, W)
+        # side_refinement = self.side_refinement(x)
 
-        return score, loc, side_refinement
+        return score, loc
 
 
 if __name__ == '__main__':

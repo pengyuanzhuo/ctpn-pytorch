@@ -58,7 +58,7 @@ def train_epoch(model, data_loader, criterion, optimizer, epoch, use_cuda=True):
         # loc.shape = (1, 20, H, W)
         # side_refinement.shape = (1, 10, H, W)
         if use_cuda:
-            img, label = img.to(CUR_DEVICE), label.to(CUR_DEVICE)
+            img = img.to(CUR_DEVICE)
         score, loc = model(img)
 
         # target

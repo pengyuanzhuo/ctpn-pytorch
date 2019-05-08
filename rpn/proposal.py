@@ -1,10 +1,10 @@
 # coding: utf-8
 
 import numpy as np
-from generate_anchors import generate_anchors
-from bbox.bbox_transform import bbox_transform_inv
-from config import Config as cfg
-from bbox.py.nms import py_nms
+from rpn.generate_anchors import generate_anchors
+from bbox.bbox_utils import bbox_transform_inv, py_nms
+from rpn.config import Config as cfg
+
 
 def bbox_clip(bboxes, h, w):
     '''
@@ -19,7 +19,7 @@ def bbox_clip(bboxes, h, w):
     # ymin
     bboxes[:, [1]] = np.maximum(0, np.minumum(bboxes[:, [1]], h - 1))
     # xmax
-    bboxes[:, [2]] = np.maximum(0, np.minumum(bboxes[:. [2]], w - 1))
+    bboxes[:, [2]] = np.maximum(0, np.minumum(bboxes[:, [2]], w - 1))
     # ymax
     bboxes[:, [3]] = np.maximum(0, np.minumum(bboxes[:, [3]], h - 1))
 

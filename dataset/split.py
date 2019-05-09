@@ -92,13 +92,12 @@ if __name__ == '__main__':
             im_size_min = np.min(img_size[0:2])
             im_size_max = np.max(img_size[0:2])
 
-            im_scale = float(600) / float(im_size_min)
-            if np.round(im_scale * im_size_max) > 1200:
-                im_scale = float(1200) / float(im_size_max)
+            im_scale = float(MIN_LEN) / float(im_size_min)
+            if np.round(im_scale * im_size_max) > MAX_LEN:
+                im_scale = float(MAX_LEN) / float(im_size_max)
             new_h = int(img_size[0] * im_scale)
             new_w = int(img_size[1] * im_scale)
 
-            # 感觉if多余, 
             new_h = new_h if new_h // 16 == 0 else (new_h // 16 + 1) * 16 # 图片扩一个anchor的宽度
             new_w = new_w if new_w // 16 == 0 else (new_w // 16 + 1) * 16
 
@@ -129,8 +128,8 @@ if __name__ == '__main__':
                     continue
 
                 res = shrink_poly(poly) # 每个poly可以分成多个小区域
-                for p in res:
-                   cv2.polylines(re_im, [p.astype(np.int32).reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=1)
+                # for p in res:
+                #    cv2.polylines(re_im, [p.astype(np.int32).reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=1)
 
                 res = res.reshape([-1, 4, 2])
                 # 处理每个小区域, 将不规则四边形转成矩形(xmin, ymin, x_max, y_max)

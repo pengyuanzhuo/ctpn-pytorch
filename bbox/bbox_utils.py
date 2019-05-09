@@ -97,14 +97,14 @@ def py_iou(bbox_a, bbox_b):
     return overlaps
 
 
-def py_nms(scores, bboxes, iou_theashold=0.5, max_boxes=None):
+def py_nms(scores, bboxes, iou_threshold=0.5, max_boxes=None):
     '''
     Applies Non-max suppression (NMS) to set of boxes
     Python baseline
     Args:
         scores: np.array, shape=(N, )
         bboxes: np.array, shape=(N, 4), vstack [xmin, ymin, xmax, ymax]
-        iou_theashold: real value, "intersection over union" threshold used for NMS filtering
+        iou_threshold: real value, "intersection over union" threshold used for NMS filtering
         max_boxes: integer, maximum number of predicted boxes you'd like
     Return:
         scores: np.array, shape=(M, )
@@ -116,9 +116,9 @@ def py_nms(scores, bboxes, iou_theashold=0.5, max_boxes=None):
     while indices.size > 0:
         i = indices[0]
         keep.append(i)
-        i_ious = iou.py_iou(bboxes[i], bboxes[indices[1:]])
+        i_ious = py_iou(bboxes[i], bboxes[indices[1:]])
         i_ious = np.squeeze(i_ious)
-        keep_indices = np.where(i_ious < iou_theashold)[0]
+        keep_indices = np.where(i_ious < iou_threshold)[0]
         indices = indices[keep_indices + 1]
 
     if max_boxes and len(keep) > max_boxes:

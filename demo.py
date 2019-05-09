@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import os
 import argparse
 import cv2
 import numpy as np
@@ -57,5 +58,14 @@ if __name__ == '__main__':
     scores, proposal = infer(inputs, im_info, model)
     print(scores.shape)
     print(proposal.shape)
-    # draw
-    # TODO
+
+    img = cv2.imread(args.img)
+    h, w, _ = img.shape
+    scale = float(768) / float(min(h, w))
+    img = cv2.resize(img, (0, 0), fx=scale, fy=scale)
+
+    for i in proposal.shape[0]:
+        bbox = proposal[i]
+        poly = np.array([[bbox[0], bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]]])
+        cv2.polylines(img, [poly], True, color=(255,255,0), thickness=3)
+    cv2.imwrite('./out.jpg', img)

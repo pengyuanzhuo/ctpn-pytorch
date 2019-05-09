@@ -15,13 +15,13 @@ def bbox_clip(bboxes, h, w):
         w: int, img weight
     '''
     # xmin
-    bboxes[:, [0]] = np.maximum(0, np.minumum(bboxes[:, [0]], w - 1))
+    bboxes[:, [0]] = np.maximum(0, np.minimum(bboxes[:, [0]], w - 1))
     # ymin
-    bboxes[:, [1]] = np.maximum(0, np.minumum(bboxes[:, [1]], h - 1))
+    bboxes[:, [1]] = np.maximum(0, np.minimum(bboxes[:, [1]], h - 1))
     # xmax
-    bboxes[:, [2]] = np.maximum(0, np.minumum(bboxes[:, [2]], w - 1))
+    bboxes[:, [2]] = np.maximum(0, np.minimum(bboxes[:, [2]], w - 1))
     # ymax
-    bboxes[:, [3]] = np.maximum(0, np.minumum(bboxes[:, [3]], h - 1))
+    bboxes[:, [3]] = np.maximum(0, np.minimum(bboxes[:, [3]], h - 1))
 
     return bboxes
 
@@ -80,9 +80,9 @@ def bbox_proposal(cls_map, reg_map, im_info, feat_stride=16):
 
     # cls_map 4D => 2D
     scores = cls_map.transpose((0, 2, 3, 1)) # (N, 2A, H, W) => (N, H, W, 2A)
-    scores = scores.reshape((N, H, W, n_anchors, 2)) # (N, H, W, 2A) => (N, H, W, A, 2)
+    scores = scores.reshape((N, feat_map_h, feat_map_w, 10, 2)) # (N, H, W, 2A) => (N, H, W, A, 2)
     scores = scores[:, :, :, :, 1] # prob(fg)
-    scores = scores.reshape((N, H, W, n_anchors)) # shape=(N, H, W, A)
+    scores = scores.reshape((N, feat_map_h, feat_map_w, 10)) # shape=(N, H, W, A)
     scores = scores.reshape((-1, 1)) # shape=(1*H*W*A, 1)
     scores = scores.ravel() # (H*W*A, )
 
@@ -91,7 +91,7 @@ def bbox_proposal(cls_map, reg_map, im_info, feat_stride=16):
     proposal = bbox_clip(proposal, img_h, img_w)
     keep_indices = bbox_filter(proposal, cfg.MIN_SIZE)
     scores = scores[keep_indices]
-    proposal = scores[keep_indices, :]
+    proposal = proposal[keep_indices, :]
 
     # 筛选出score > score_threshold的proposal
     pos_indices = np.where(scores >= cfg.SCORE_THRESHOLD)[0]

@@ -51,7 +51,6 @@ def train_epoch(model, data_loader, criterion, optimizer, epoch, use_cuda=True):
     '''
     1 epoch
     '''
-
     batch_time = AverageMeter()
     losses = AverageMeter()
     tic = time.time()
@@ -83,14 +82,13 @@ def train_epoch(model, data_loader, criterion, optimizer, epoch, use_cuda=True):
 
         batch_time.update(time.time() - tic)
         tic = time.time()
-
         if i % cfg.PRINT_FREQ == 0:
             print('Epoch {0} | {1}/{2}\t'
                   'Batch Time {batch_time.avg:.4f}({batch_time.val:.4f})\t'
                   'Loss {losses.avg:.4f}({losses.val:.4f})'.format(epoch, i, len(data_loader),
                     batch_time=batch_time, losses=losses))
 
-        return losses.avg
+    return losses.avg
 
 
 def validate(model, val_loader, criterion, use_cuda=True):

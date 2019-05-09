@@ -81,7 +81,7 @@ class SplitBoxDataset(data.Dataset):
 
 
 class Rescale(object):
-    def __init__(self, short_side=600):
+    def __init__(self, short_side=768):
         self.short_side = short_side
 
     def __call__(self, sample):
@@ -128,4 +128,23 @@ class Normalize(object):
 
 
 if __name__ == "__main__":
-    pass
+    from torchvision import transforms
+
+    data_transforms = transforms.Compose([
+        Rescale(short_side=768),
+        ToTensor(),
+        Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])]
+    )
+    train_set = SplitBoxDataset('./train', transform=data_transforms)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=1,
+                                               shuffle=True, pin_memory=True)
+
+    for img, label, img_info in train_loader:
+        img = img.numpy().squeeze(0).transpose((1, 2, 0))[:, :, ::-1].copy()
+        print(img.shape)
+        label = label.numpy().squeeze(0).astype(np.int32)
+        for bbox in label:
+            cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
+        cv2.imshow('debug', img)
+        cv2.waitKey()
+        break

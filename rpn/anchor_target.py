@@ -7,6 +7,14 @@ from bbox.bbox_utils import bbox_transform
 from bbox.bbox_utils import py_iou
 
 
+def helper(img, bboxes):
+    import cv2
+    for bbox in bboxes:
+        cv2.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 255, 0), 1)
+    cv2.imshow('debug', img)
+    cv2.waitKey()
+
+
 def anchor_target(feat_map_size, gt_boxes, im_info, feat_stride=16):
     '''
     Args:

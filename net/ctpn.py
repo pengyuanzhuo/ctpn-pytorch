@@ -48,7 +48,7 @@ class CTPN(nn.Module):
         self.im2col = Im2col(3, 1, 1)
         self.lstm = BLSTM(3*3*512, 128, True, True)
 
-        self.fc = nn.Conv2d(256, 512, 3, 1)
+        self.fc = nn.Conv2d(256, 512, 1, 1)
 
         self.cls = nn.Conv2d(512, 2*10, kernel_size=1, stride=1)
         self.loc = nn.Conv2d(512, 2*10, kernel_size=1, stride=1)
